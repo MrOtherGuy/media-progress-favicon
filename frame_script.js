@@ -6,52 +6,50 @@
   }
   window.faviconFrame = true;
   
-  const VIDEOS = document.getElementsByTagName("video");
+  //const VIDEOS = document.getElementsByTagName("video");
   const isTopFrame = window.top === window;
-  //let TABID = null;
 
   function getProgress(a){
     if(!a.duration){
-      return
+      return 0
     }
     return a.currentTime/a.duration
   }
 
+  function getVideo(){
+    let videos = document.getElementsByTagName("video");
+    let selectedVideo = null;
+    for(let video of videos){
+      if(video.mozHasAudio && !video.muted){
+        selectedVideo = video;
+        break;
+      }
+    }
+    return selectedVideo
+  }
+
   function edit(){
-    if(!VIDEOS[0] || document.fullscreen){
+    let video = getVideo();
+    if(!video || document.fullscreen){
       return
     }
     if(isTopFrame){
-    //window.top.testJee();
-      window.favicon.update(getProgress(VIDEOS[0]));
+      window.favicon.update(getProgress(video));
     }else{
       browser.runtime.sendMessage(
-        {progress: getProgress(VIDEOS[0])},
+        {progress: getProgress(video)},
       );
     }
   }
 
-  if(!VIDEOS.length){
+  if(!getVideo()){
     return
   }
   
-  //browser.tabs.getCurrent().then(function(tab){ TABID = tab.id });
-  
   let intervalFn = setInterval(edit,2000);
-    
-    
+  
   VIDEOS[0].addEventListener("play",function(){ intervalFn = setInterval(edit,2000) });
   VIDEOS[0].addEventListener("pause",function(){ clearInterval(intervalFn) });
   VIDEOS[0].addEventListener("ended",function(){ clearInterval(intervalFn) });
-  /*
-  function notifyBackgroundPage(e) {
-  var sending = browser.runtime.sendMessage({
-    greeting: "Greeting from the content script"
-  });
-  sending.then(handleResponse, handleError);  
-}*/
-  
-  
   
 })();
-//browser.tabs.getCurrent().then(function(tab){ console.log(tab) });
