@@ -6,7 +6,6 @@
   }
   window.faviconFrame = true;
   
-  //const VIDEOS = document.getElementsByTagName("video");
   const isTopFrame = window.top === window;
 
   function getProgress(a){
@@ -28,28 +27,50 @@
     return selectedVideo
   }
 
-  function edit(){
+  function edit(arg){
     let video = getVideo();
-    if(!video || document.fullscreen){
+    if(!arg && (!video || document.fullscreen)){
+      window.faviconFrame = false;
       return
     }
+    
+    let progress = arg ? arg.progress : getProgress(video);
+    
     if(isTopFrame){
-      window.favicon.update(getProgress(video));
+      window.favicon.update(progress);
     }else{
       browser.runtime.sendMessage(
-        {progress: getProgress(video)},
+        {progress: progress},
       );
     }
   }
-
-  if(!getVideo()){
-    return
+  
+  function clearInter(runEdit){
+    window.faviconFrame = false;
+    if(runEdit){
+      edit({progress:0});
+    }
+    clearInterval(intervalFn);
   }
   
-  let intervalFn = setInterval(edit,2000);
+  function init(){
+    let video = getVideo();
+    if(!video || video.observed){
+      return 1
+    }else{
+      video.addEventListener("play",function(){ window.faviconFrame = true; intervalFn = setInterval(edit,2000) });
+      video.addEventListener("pause",clearInter);
+      video.addEventListener("ended",clearInter);
+      video.addEventListener("abort",clearInter);
+      Object.defineProperty(video,"observed",{value:true});
+    }
+    return 0
+  }
   
-  VIDEOS[0].addEventListener("play",function(){ intervalFn = setInterval(edit,2000) });
-  VIDEOS[0].addEventListener("pause",function(){ clearInterval(intervalFn) });
-  VIDEOS[0].addEventListener("ended",function(){ clearInterval(intervalFn) });
-  
+  let intervalFn = null;
+
+  if(!init()){
+    intervalFn = setInterval(edit,2000);
+  }
+
 })();
