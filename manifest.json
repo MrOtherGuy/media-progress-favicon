@@ -1,5 +1,5 @@
 {
-  "description": "Adds a progress icon to tab favicon",
+  "description": "Adds a video progress indicator to tab favicon",
 	"author": "MrOtherGuy",
   "manifest_version": 2,
   "name": "Progressicon",
@@ -8,10 +8,6 @@
 	"background": {
 		"scripts": ["background-script.js"]
 	},
-	"browser_action": {
-      "default_title": "Toggle Darkmode",
-			"browser_style": true
-  },
 	"applications": {
   "gecko": {
     "id": "progressicon@example.com",
