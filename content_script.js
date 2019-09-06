@@ -3,7 +3,7 @@
 (function(){
   
   if(window.favicon != undefined){
-    return
+    return // Don't do anything if this script has already been run
   }
   
   function getFavicon(){
@@ -23,16 +23,15 @@
     let FAVICON_ELEM = document.createElement('link');
     FAVICON_ELEM.type = 'image/x-icon';
     FAVICON_ELEM.rel = 'shortcut icon';
-    //FAVICON_ELEM.classList.add("jes-playing");
     document.getElementsByTagName('head')[0].appendChild(FAVICON_ELEM);
     return FAVICON_ELEM
   }
-  
+  // Store the data in window.favicon property, not visible to page scripts
   window.favicon = {
     icon: new Image(),
     element: createLinkElement(),
     update: function(progress){
-
+      // CTX is a constant reference to canvas2dcontext where the modified favicon is drawn to
       CTX.clearRect(0,0,32,32);
       CTX.drawImage(this.icon, 0, 0, 32, 32);
       if(progress){
@@ -53,7 +52,8 @@
     let ctx = canvas.getContext("2d");
     return ctx;
   }
-  
+  // Create a 2x2 canvas to draw downsampled favicon image to
+  // Then get the color values from the bottom-right pixel
   function getColorForImage(image){
     let canvas = createCanvas(2,2);
     canvas.drawImage(image,0,0,2,2);
@@ -63,25 +63,20 @@
     for(let i = 0; i < 3; i++){
       diff[i] = Math.abs(imdata[i] - pixels[i]);
     }
-    let ret = diff.every((a)=>(a < 40)) ? "rgb(255,0,0)" : `rgb(${pixels[0]},${pixels[1]},${pixels[2]})`;
-//    console.log(imdata);
-    ;
-    return ret
+    // if difference of every r,g,b value and the inverted ones is less than 40 then draw the progress as red 
+    return diff.every((a)=>(a < 40)) ? "rgb(255,0,0)" : `rgb(${pixels[0]},${pixels[1]},${pixels[2]})`;
   }
   
   function createFaviconCanvas(){
     let canvas = createCanvas(32,32);
-//     let canvas2 = createCanvas(5,5);
- //    document.body.appendChild(canvas2.canvas);
     let icon = window.favicon.icon;
-    icon.decode().then(function(){ let color= getColorForImage(icon); canvas.strokeStyle = color; /*console.log(color); canvas2. drawImage(icon,0,0,5,5);*/  });
-    //canvas.strokeStyle = getColorForImage(window.favicon.icon);
+    icon.decode().then(function(){ canvas.strokeStyle = getColorForImage(icon) });
     canvas.lineWidth = 4;
     return canvas
   }
   
-  
-  
+  // Listen to messages from background script
+  // This is used to pass in the progress from sub-frames
   function handleMessage(request,sender) {
     sender.envType === "addon_child" && window.favicon.update(request);
   }
@@ -90,7 +85,6 @@
   window.favicon.icon.src = getFavicon().getAttribute("href");
   
   const CTX = createFaviconCanvas(32,32);
-  //console.log(CTX.strokeStyle);
   
   browser.runtime.onMessage.addListener(handleMessage);
   
