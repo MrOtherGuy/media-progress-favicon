@@ -2,7 +2,7 @@
   "description": "Adds a media progress indicator to tab favicon",
 	"author": "MrOtherGuy",
   "manifest_version": 2,
-  "name": "media-progress favicon",
+  "name": "media-progress favicons",
   "permissions": ["<all_urls>"],
   "version": "0.3",
 	"background": {

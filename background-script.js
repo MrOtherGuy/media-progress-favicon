@@ -1,7 +1,7 @@
 'use strict';
 
 function handleMutedChange(tabId, changeInfo, tabInfo){
-  console.log(changeInfo);
+  //console.log(changeInfo);
   if(changeInfo.audible){
     addScript({tabId:tabId}); // Add a script to top frame that handles modifying the favicon
     addScript({tabId:tabId,allFrames:true}); // Add a script to all frames that determines playback progress

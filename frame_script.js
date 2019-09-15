@@ -169,7 +169,7 @@
       media.addEventListener("pause",clearInter);
       media.addEventListener("ended",clearInter);
       media.addEventListener("abort",clearInter);
-      //video.addEventListener("fullscreenchange",(e)=>(print("fullscreenchange"),!video.fullscreen && video.observed && intervalFn()));
+
       Object.defineProperty(media,"observed",{value:true}); // Mark the video because it may get paused or muted
     }
     return 0
@@ -184,7 +184,7 @@
   }
   
   let INTERVAL = null;
- // document.addEventListener("load"){  }
+
   /* Set up interval function only if some video was found to produce audio */
   if(!init()){
     print("init video");
