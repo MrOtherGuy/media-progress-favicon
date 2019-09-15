@@ -78,7 +78,9 @@
   // Listen to messages from background script
   // This is used to pass in the progress from sub-frames
   function handleMessage(request,sender) {
-    sender.envType === "addon_child" && window.favicon.update(request);
+    if(!window.favicon.blocked){
+      sender.envType === "addon_child" && window.favicon.update(request);
+    }
   }
   
   window.favicon.icon.setAttribute('crossOrigin','anonymous');

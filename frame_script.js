@@ -3,7 +3,7 @@
 (function(){
   
   function print(obj){
-    const DEBUG = true;
+    const DEBUG = false;
     DEBUG && console.log(String(obj))
   }
   
@@ -13,11 +13,23 @@
     return
   }
   // Mark this frame as observed. Does NOT mean that this is a frame that is producing audio
-  // Pausing the video or removing it will cause the frame being un-observed
+  // Pausing the media or removing it will cause the frame being un-observed
   // Onplay event makes it being observed again
-  // This mechanism is necessary because a video element may get removed while the video is paused or playing
-  // And another video may start playback after the video has been removed
+  // This mechanism is necessary because a media element may get removed while the media is paused or playing
+  // And another media may start playback after the media has been removed
+ 
+ // DON'T ACTUALLY SET THIS NOW since doing so might set a frame observed that does not play audio now but might in the future
  // window.isFrameObserved = true;
+  
+  // SCENARIOS that can happen
+  // *************************
+  // source of <media> changes
+  // new <media> is added before old is removed
+  // new <media> is added after old is removed
+  // new <media> is added while the old on is paused
+  // frame that has <media> is removed (which doesn't trigger events)
+  // the tab may never become inaudible between <media> changes so can't rely on this function being always run
+  // ...more...
   
   const isTopFrame = window.top === window;
   
@@ -34,21 +46,21 @@
     return Number(duration)
   }
   
-  function getDuration(video){
-    let mDuration = video.duration;
-    // Different behavior if video length is over 10 hours
+  function getDuration(media){
+    let mDuration = media.duration;
+    // Different behavior if media length is over 10 hours
     if(mDuration > 36000){
-      if(video.overrideDuration){
-        mDuration = video.overrideDuration;
+      if(media.overrideDuration){
+        mDuration = media.overrideDuration;
       }else{
-        let maybe = getTwitchDuration(video);
+        let maybe = getTwitchDuration(media);
         print(maybe);
         if( maybe > 0 ){
           mDuration = maybe;
           // Cache the "real" duration as attribute
-          video.overrideDuration = maybe;
+          media.overrideDuration = maybe;
           // Remove the cached value when duration changes, example when the source changes
-          video.addEventListener("durationchange",(e)=>(print("durationchange"),e.target.overrideDuration=null),{once:true});
+          media.addEventListener("durationchange",(e)=>(print("durationchange"),e.target.overrideDuration=null),{once:true});
         }
       }
     }
@@ -56,23 +68,32 @@
     return mDuration
   }
   
-  function getProgress(video){
-    if(!(video.duration > 0) || video.duration === Infinity){
+  function getProgress(media){
+    if(!(media.duration > 0) || media.duration === Infinity){
       return 0
     }
-    return video.currentTime / getDuration(video)
+    return media.currentTime / getDuration(media)
   }
-  // Find a video element that is playing audio
-  function getVideo(){
-    let videos = document.getElementsByTagName("video");
-    let selectedVideo = null;
-    for(let video of videos){
+  // Find a media element that is playing audio
+  function getMedia(){
+    let media = document.getElementsByTagName("video");
+    let selectedMedia = null;
+    for(let video of media){
       if(video.mozHasAudio && !video.muted){
-        selectedVideo = video;
+        selectedMedia = video;
         break;
       }
     }
-    return selectedVideo
+    if(!selectedMedia){
+      media = document.getElementsByTagName("audio");
+      for(let audio of media){
+        if(!audio.muted){
+          selectedMedia = audio;
+          break;
+        }
+      }
+    }
+    return selectedMedia
   }
 
   // This is run once on each interval step
@@ -87,18 +108,18 @@
     if(arg){
       progress = arg.progress;
     }else{
-      let video = getVideo();
-      if(!video){
-        print(`video:${String(video)};${video.observed}`);
+      let media = getMedia();
+      if(!media){
+        print(`video:${String(media)};${media.observed}`);
         
         clearInter();
         progress = 0;
-      }else if(!video.observed){
-        print(`video:${String(video)};${video.observed}`);
-        init(video);
+      }else if(!media.observed){
+        print(`media:${String(media)};${media.observed}`);
+        init(media);
         progress = 0;
       }else{
-        progress = getProgress(video);
+        progress = getProgress(media);
       }
     }
 
@@ -130,33 +151,34 @@
     }
   }
   
-  function init(vid){
+  function init(_media){
     print("init");
-    let video = vid || getVideo();
-    if(!video || video.observed){
+    let media = _media || getMedia();
+    if(!media || media.observed){
       return 1 // Return if no video or this video is already being observed
     }else{
       print("adding video events");
-      video.addEventListener("play",function(){
+      media.addEventListener("play",function(){
         window.isFrameObserved = true;
-        !vid && intervalFn(); /* Run once immediately */
+        !_media && intervalFn(); /* Run once immediately */
         if(INTERVAL){
           clearInterval(INTERVAL);
         }
-        INTERVAL = setInterval(intervalFn, getIntervalLength(getDuration(video)));
+        INTERVAL = setInterval(intervalFn, getIntervalLength(getDuration(media)));
       });
-      video.addEventListener("pause",clearInter);
-      video.addEventListener("ended",clearInter);
-      video.addEventListener("abort",clearInter);
+      media.addEventListener("pause",clearInter);
+      media.addEventListener("ended",clearInter);
+      media.addEventListener("abort",clearInter);
       //video.addEventListener("fullscreenchange",(e)=>(print("fullscreenchange"),!video.fullscreen && video.observed && intervalFn()));
-      Object.defineProperty(video,"observed",{value:true}); // Mark the video because it may get paused or muted
+      Object.defineProperty(media,"observed",{value:true}); // Mark the video because it may get paused or muted
     }
     return 0
   }
   
   /* There's no reason to update the icon each second on long videos so do some mapping */
   function getIntervalLength(duration){
-    if( duration < 60 ){ return 1000 }
+    if (duration < 1){ return 10000 }
+    else if( duration < 60 ){ return 1000 }
     else if( duration < 240 ){ return 2000 }
     else{ return 5000 }
   }
@@ -167,7 +189,7 @@
   if(!init()){
     print("init video");
     document.addEventListener("fullscreenchange",(e)=>(print("fullscreenchange"),!document.fullscreen && e.target != document.documentElement && intervalFn()))
-    INTERVAL = setInterval(intervalFn, getIntervalLength(getDuration(getVideo())));
+    INTERVAL = setInterval(intervalFn, getIntervalLength(getDuration(getMedia())));
     window.isFrameObserved = true;
   }
 

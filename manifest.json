@@ -1,10 +1,10 @@
 {
-  "description": "Adds a video progress indicator to tab favicon",
+  "description": "Adds a media progress indicator to tab favicon",
 	"author": "MrOtherGuy",
   "manifest_version": 2,
-  "name": "Progressicon",
+  "name": "media-progress favicon",
   "permissions": ["<all_urls>"],
-  "version": "0.2",
+  "version": "0.3",
 	"background": {
 		"scripts": ["background-script.js"]
 	},
